@@ -36,6 +36,7 @@
       (if (get str-control-chars (int (get input 0))) nil
           [(subs input 0 1) (subs input 1)])))
 
+(some #(str/starts-with? "\n" (str (char %))) str-control-chars)
 (boolean (get str-control-chars 0))
 (int (get "a\b" 0))
 (parse-string-char "")
@@ -64,7 +65,24 @@
         (if (nil? string-chars-matcher) nil
             [(get string-chars-matcher 0) (subs (get string-chars-matcher 1) 1)]))))
 
-"tests"
+(defn parse-array [input]
+  (if (not (str/starts-with? input "[")) nil
+      (let [input (subs input 1)]
+        (if (str/starts-with? (str/triml input) "]")
+          [[] (subs (str/triml input) 1)]
+          nil))))
+(parse-array "[ \t\n ]  s")
+(json/read-str "   [ \t\n ]  ")
+
+;; Macros
+(defmacro backwards [form] (reverse form))
+(backwards (3 2 1 +))
+(backwards (\c \b \a str))
+(defmacro infix [[arg1 fnc arg2]] (list fnc arg1 arg2))
+(infix (1 + 2))
+(macroexpand '(infix (1 + 2)))
+(defn sum-two [a b] (infix (a + b)))
+(sum-two 1 2)
 
 "check falsy or truthy values"
 (boolean nil)
