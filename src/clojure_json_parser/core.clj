@@ -16,6 +16,14 @@
         (let [number-match (get number-matcher 0)]
           [(Double/parseDouble number-match) (subs input (.length number-match))]))))
 
+(def str-esc-chars {"\"" "\"", "\\" "\\", "/" "/", "b" "\b", "f" "\f", "n" "\n", "r" "\r", "t" "\t"})
+(defn parse-esc-char [input]
+  (if (and (> (.length input) 0) (get str-esc-chars (subs input 0 1)))
+    [(get str-esc-chars (subs input 0 1)) (subs input 1)]
+    nil))
+
+(parse-esc-char "nn")
+
 (defn parse-unicode-char [input]
   (let [unicode-char-matcher (re-find #"^u([a-fA-F0-9]{4})" input)]
     (if (nil? unicode-char-matcher) nil
@@ -26,14 +34,17 @@
   (if (= (.length input) 0) nil
       (if (str/starts-with? input "\"") ["" input]
           (if (str/starts-with? input "\\")
-            (let [unicode-char-matcher (parse-unicode-char (subs input 1))]
-              (if (nil? unicode-char-matcher) nil
-                  (let [string-matcher (parse-string-chars (get unicode-char-matcher 1))]
+            (let [char-matcher (or (parse-unicode-char (subs input 1))
+                                   (parse-esc-char (subs input 1)))]
+              (if (nil? char-matcher) nil
+                  (let [string-matcher (parse-string-chars (get char-matcher 1))]
                     (if (nil? string-matcher) nil
-                        [(str (get unicode-char-matcher 0) (get string-matcher 0)) (get string-matcher 1)]))))
+                        [(str (get char-matcher 0) (get string-matcher 0))
+                         (get string-matcher 1)]))))
             (let [string-matcher (parse-string-chars (subs input 1))]
               (if (nil? string-matcher) nil
-                  [(str (subs input 0 1) (get string-matcher 0)) (get string-matcher 1)]))))))
+                  [(str (subs input 0 1) (get string-matcher 0))
+                   (get string-matcher 1)]))))))
 
 (defn parse-string [input]
   (if (not (str/starts-with? input "\"")) nil
@@ -50,6 +61,6 @@
 (parse-unicode-char "uabcde")
 
 "parse string"
-(def json-string "\"\\uabcde\\u8347\"")
+(def json-string "\"\\uabcde\\u8347\\n\"kadksjhda")
 (parse-string json-string)
 (json/read-str json-string)
