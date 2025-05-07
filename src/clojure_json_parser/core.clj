@@ -30,6 +30,16 @@
         [(char (Integer/parseInt (get unicode-char-matcher 1) 16))
          (subs input 5)])))
 
+(def str-control-chars #{1 0 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 127})
+(defn parse-string-char [input]
+  (if (= (.length input) 0) nil
+      (if (get str-control-chars (int (get input 0))) nil
+          [(subs input 0 1) (subs input 1)])))
+
+(boolean (get str-control-chars 0))
+(int (get "a\b" 0))
+(parse-string-char "")
+
 (defn parse-string-chars [input]
   (if (= (.length input) 0) nil
       (if (str/starts-with? input "\"") ["" input]
@@ -41,10 +51,12 @@
                     (if (nil? string-matcher) nil
                         [(str (get char-matcher 0) (get string-matcher 0))
                          (get string-matcher 1)]))))
-            (let [string-matcher (parse-string-chars (subs input 1))]
-              (if (nil? string-matcher) nil
-                  [(str (subs input 0 1) (get string-matcher 0))
-                   (get string-matcher 1)]))))))
+            (let [string-char-matcher (parse-string-char input)]
+              (if (nil? string-char-matcher) nil
+                  (let [string-matcher (parse-string-chars (get string-char-matcher 1))]
+                    (if (nil? string-matcher) nil
+                        [(str (get string-char-matcher 0) (get string-matcher 0))
+                         (get string-matcher 1)]))))))))
 
 (defn parse-string [input]
   (if (not (str/starts-with? input "\"")) nil
