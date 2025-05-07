@@ -67,12 +67,19 @@
 
 (defn parse-array [input]
   (if (not (str/starts-with? input "[")) nil
-      (let [input (subs input 1)]
-        (if (str/starts-with? (str/triml input) "]")
-          [[] (subs (str/triml input) 1)]
-          nil))))
-(parse-array "[ \t\n ]  s")
-(json/read-str "   [ \t\n ]  ")
+      (let [input (str/triml (subs input 1))]
+        (if (str/starts-with? input "]")
+          [[] (subs input 1)]
+          (let [value-matcher (parse-value input)]
+            (if (nil? value-matcher) nil
+                (let [input (str/triml (get value-matcher 1))]
+                  (if (not (str/starts-with? input "]")) nil
+                      [[(get value-matcher 0)] (subs input 1)]))))))))
+(parse-array "[ 123.9 \t\n ]  s")
+(json/read-str "   [ 123.9\t\n ]  ")
+
+(defn parse-value [input] (some #(% input) [parse-null parse-bool parse-number parse-string parse-array]))
+(parse-value "123abc")
 
 ;; Macros
 (defmacro backwards [form] (reverse form))
