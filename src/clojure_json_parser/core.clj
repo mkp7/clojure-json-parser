@@ -125,12 +125,19 @@
                         [(into (get object-key-value 0) (get object-key-values 0)) (subs (str/triml (get object-key-values 1)) 1)]))))))))
 
 (parse-object "{}")
-(parse-object "{\"b\": 1}, \"a\": 2}")
+(parse-object "{\"b\": 1, \"a\": 2}")
 (json/read-str "{}")
 (json/read-str "{\"b\": 1, \"a\": 2}")
 
 (defn parse-value [input] (some #(% (str/triml input)) [parse-null parse-bool parse-number parse-string parse-array parse-object]))
 (parse-value "123abc")
+
+(defn parse-json [input]
+  (let [value-match (parse-value input)]
+    (if (or (nil? value-match) (> (.length (str/triml (get value-match 1))) 0)) nil
+        (get value-match 0))))
+(json/read-str "{\"b\": 1, \"a\": [2]}")
+(parse-json "{\"b\": 1, \"a\": [2]}")
 
 ;; Macros
 (defmacro backwards [form] (reverse form))
