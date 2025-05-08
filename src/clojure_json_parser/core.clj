@@ -1,5 +1,6 @@
 (ns clojure-json-parser.core
-  (:require [clojure.string :as str]))
+  (:require [clojure.string :as str]
+            [clojure.java.io :as io]))
 
 (defn parse-null [input]
   (if (str/starts-with? input "null") [nil (subs input 4)] nil))
@@ -108,3 +109,12 @@
   (let [value-match (parse-value input)]
     (if (or (nil? value-match) (> (.length (str/triml (get value-match 1))) 0)) nil
         (get value-match 0))))
+
+(defn test-json-parser []
+  (let [test-files
+        (map #(.getAbsolutePath %)
+             (filter #(.isFile %) (file-seq (io/file "./test/clojure_json_parser/cases"))))]
+    (map #(list % (not (nil? (parse-json (slurp %)))))
+         test-files)))
+
+(test-json-parser)
