@@ -65,6 +65,16 @@
         (if (nil? string-chars-matcher) nil
             [(get string-chars-matcher 0) (subs (get string-chars-matcher 1) 1)]))))
 
+(defn parse-array-values [input]
+  (if (not (str/starts-with? (str/triml input) ",")) [[] input]
+      (let [value-matcher (parse-value (subs (str/triml input) 1))]
+        (if (nil? value-matcher) nil
+            (let [parse-array-values-match (parse-array-values (get value-matcher 1))]
+              (if (nil? parse-array-values-match) nil
+                  [(into [(get value-matcher 0)] (get parse-array-values-match 0)) (get parse-array-values-match 1)]))))))
+(parse-array-values "\r , \n 1 \t,null   , \"abc\"   blabla")
+(parse-array-values ",null,1,\"\"  abc")
+
 (defn parse-array [input]
   (if (not (str/starts-with? input "[")) nil
       (let [input (str/triml (subs input 1))]
@@ -72,13 +82,13 @@
           [[] (subs input 1)]
           (let [value-matcher (parse-value input)]
             (if (nil? value-matcher) nil
-                (let [input (str/triml (get value-matcher 1))]
-                  (if (not (str/starts-with? input "]")) nil
-                      [[(get value-matcher 0)] (subs input 1)]))))))))
-(parse-array "[ 123.9 \t\n ]  s")
-(json/read-str "   [ 123.9\t\n ]  ")
+                (let [array-values (parse-array-values (str/triml (get value-matcher 1)))]
+                  (if (or (nil? array-values) (not (str/starts-with? (str/triml (get array-values 1)) "]"))) nil
+                      [(into [(get value-matcher 0)] (get array-values 0)) (subs (str/triml (get array-values 1)) 1)]))))))))
+(parse-array "[ 1, [ 123.9 ] \t\n ]  s")
+(json/read-str "   [ 1, [ 123.9 ]\t\n ]  ")
 
-(defn parse-value [input] (some #(% input) [parse-null parse-bool parse-number parse-string parse-array]))
+(defn parse-value [input] (some #(% (str/triml input)) [parse-null parse-bool parse-number parse-string parse-array]))
 (parse-value "123abc")
 
 ;; Macros
