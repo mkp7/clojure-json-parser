@@ -30,14 +30,14 @@
         [(char (Integer/parseInt (get unicode-char-matcher 1) 16))
          (subs input 5)])))
 
-(def str-control-chars #{1 0 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 127})
+(def control-chars #{1 0 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 127})
 (defn parse-string-char [input]
   (if (= (.length input) 0) nil
-      (if (get str-control-chars (int (get input 0))) nil
+      (if (get control-chars (int (get input 0))) nil
           [(subs input 0 1) (subs input 1)])))
 
-(some #(str/starts-with? "\n" (str (char %))) str-control-chars)
-(boolean (get str-control-chars 0))
+(some #(str/starts-with? "\n" (str (char %))) control-chars)
+(boolean (get control-chars 0))
 (int (get "a\b" 0))
 (parse-string-char "")
 
@@ -78,15 +78,24 @@
 (defn parse-array [input]
   (if (not (str/starts-with? input "[")) nil
       (let [input (str/triml (subs input 1))]
-        (if (str/starts-with? input "]")
-          [[] (subs input 1)]
-          (let [value-matcher (parse-value input)]
-            (if (nil? value-matcher) nil
-                (let [array-values (parse-array-values (str/triml (get value-matcher 1)))]
-                  (if (or (nil? array-values) (not (str/starts-with? (str/triml (get array-values 1)) "]"))) nil
-                      [(into [(get value-matcher 0)] (get array-values 0)) (subs (str/triml (get array-values 1)) 1)]))))))))
+        (if (str/starts-with? input "]") [[] (subs input 1)]
+            (let [value-matcher (parse-value input)]
+              (if (nil? value-matcher) nil
+                  (let [array-values (parse-array-values (str/triml (get value-matcher 1)))]
+                    (if (or (nil? array-values) (not (str/starts-with? (str/triml (get array-values 1)) "]"))) nil
+                        [(into [(get value-matcher 0)] (get array-values 0)) (subs (str/triml (get array-values 1)) 1)]))))))))
 (parse-array "[ 1, [ 123.9 ] \t\n ]  s")
+(parse-array "[]")
 (json/read-str "   [ 1, [ 123.9 ]\t\n ]  ")
+
+(defn parse-object [input]
+  (if (not (str/starts-with? input "{")) nil
+      (let [input (str/triml (subs input 1))]
+        (if (str/starts-with? input "}") [{} (subs input 1)]
+            nil))))
+(parse-object "{}")
+(json/read-str "{}")
+(json/read-str "{\"a\": 1}")
 
 (defn parse-value [input] (some #(% (str/triml input)) [parse-null parse-bool parse-number parse-string parse-array]))
 (parse-value "123abc")
