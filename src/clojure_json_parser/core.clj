@@ -88,16 +88,45 @@
 (parse-array "[]")
 (json/read-str "   [ 1, [ 123.9 ]\t\n ]  ")
 
+(defn parse-object-key-value [input]
+  (let [object-key-matcher (parse-string (str/triml input))]
+    (if (nil? object-key-matcher) nil
+        (let [object-key (get object-key-matcher 0) input (get object-key-matcher 1)]
+          (if (not (str/starts-with? (str/triml input) ":")) nil
+              (let [object-value-matcher (parse-value (subs (str/triml input) 1))]
+                (if (nil? object-value-matcher) nil
+                    [{object-key (get object-value-matcher 0)} (get object-value-matcher 1)])))))))
+(parse-object-key-value " \r \"a\" \n : \t1bla")
+(parse-object-key-value " \r  \n : \t1bla")
+
+(defn parse-object-key-values [input]
+  (if (not (str/starts-with? (str/triml input) ",")) [{} input]
+      (let [key-value-match (parse-object-key-value (subs (str/triml input) 1))]
+        (if (nil? key-value-match) nil
+            (let [parse-object-key-values-match (parse-object-key-values (get key-value-match 1))]
+              (if (nil? parse-object-key-values-match) nil
+                  [(into (get key-value-match 0) (get parse-object-key-values-match 0)) (get parse-object-key-values-match 1)]))))))
+(parse-object-key-values "   ,  \"a\"  :   1   ,   \"b\"  :  2     \"c\"  :  3  ")
+(parse-object-key-values "   ,   :   1   ,   \"b\"  :  2     \"c\"  :  3  ")
+(let [input "   ,   :   1   ,   \"b\"  :  2     \"c\"  :  3  "]
+  (if (not (str/starts-with? (str/triml input) ",")) [{} input] nil))
+
 (defn parse-object [input]
   (if (not (str/starts-with? input "{")) nil
       (let [input (str/triml (subs input 1))]
         (if (str/starts-with? input "}") [{} (subs input 1)]
-            nil))))
-(parse-object "{}")
-(json/read-str "{}")
-(json/read-str "{\"a\": 1}")
+            (let [object-key-value-match (parse-object-key-value input)]
+              (if (nil? object-key-value-match) nil
+                  (let [input (str/triml (get object-key-value-match 1))]
+                    (if (not (str/starts-with? input "}")) nil
+                        [(get object-key-value-match 0) (subs input 1)]))))))))
 
-(defn parse-value [input] (some #(% (str/triml input)) [parse-null parse-bool parse-number parse-string parse-array]))
+(parse-object "{}")
+(parse-object "{\"b\": 1}, \"a\": 2}")
+(json/read-str "{}")
+(json/read-str "{\"b\": 1, \"a\": 2}")
+
+(defn parse-value [input] (some #(% (str/triml input)) [parse-null parse-bool parse-number parse-string parse-array parse-object]))
 (parse-value "123abc")
 
 ;; Macros
