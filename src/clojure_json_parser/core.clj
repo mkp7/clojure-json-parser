@@ -107,7 +107,10 @@
               (if (nil? parse-object-key-values-match) nil
                   [(into (get key-value-match 0) (get parse-object-key-values-match 0)) (get parse-object-key-values-match 1)]))))))
 (parse-object-key-values "   ,  \"a\"  :   1   ,   \"b\"  :  2     \"c\"  :  3  ")
+(parse-object-key-values "     \"a\"  :   1   ,   \"b\"  :  2     \"c\"  :  3  ")
 (parse-object-key-values "   ,   :   1   ,   \"b\"  :  2     \"c\"  :  3  ")
+(parse-object-key-values ", \"a\": 2}")
+
 (let [input "   ,   :   1   ,   \"b\"  :  2     \"c\"  :  3  "]
   (if (not (str/starts-with? (str/triml input) ",")) [{} input] nil))
 
@@ -115,11 +118,11 @@
   (if (not (str/starts-with? input "{")) nil
       (let [input (str/triml (subs input 1))]
         (if (str/starts-with? input "}") [{} (subs input 1)]
-            (let [object-key-value-match (parse-object-key-value input)]
-              (if (nil? object-key-value-match) nil
-                  (let [input (str/triml (get object-key-value-match 1))]
-                    (if (not (str/starts-with? input "}")) nil
-                        [(get object-key-value-match 0) (subs input 1)]))))))))
+            (let [object-key-value (parse-object-key-value input)]
+              (if (nil? object-key-value) nil
+                  (let [object-key-values (parse-object-key-values (str/triml (get object-key-value 1)))]
+                    (if (or (nil? object-key-values) (not (str/starts-with? (str/triml (get object-key-values 1)) "}"))) nil
+                        [(into (get object-key-value 0) (get object-key-values 0)) (subs (str/triml (get object-key-values 1)) 1)]))))))))
 
 (parse-object "{}")
 (parse-object "{\"b\": 1}, \"a\": 2}")
