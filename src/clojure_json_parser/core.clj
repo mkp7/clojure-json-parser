@@ -77,12 +77,11 @@
                     [{object-key (get object-value-matcher 0)} (get object-value-matcher 1)])))))))
 
 (defn parse-object-key-values [input]
-  (if (not (str/starts-with? (str/triml input) ",")) [{} input]
-      (let [key-value-match (parse-object-key-value (subs (str/triml input) 1))]
-        (if (nil? key-value-match) nil
-            (let [parse-object-key-values-match (parse-object-key-values (get key-value-match 1))]
-              (if (nil? parse-object-key-values-match) nil
-                  [(into (get key-value-match 0) (get parse-object-key-values-match 0)) (get parse-object-key-values-match 1)]))))))
+  (loop [data {} input input]
+    (if (not (str/starts-with? (str/triml input) ",")) [data input]
+        (let [key-value-match (parse-object-key-value (subs (str/triml input) 1))]
+          (if (nil? key-value-match) nil
+              (recur (into data (get key-value-match 0)) (get key-value-match 1)))))))
 
 (defn parse-object [input]
   (if (not (str/starts-with? input "{")) nil
