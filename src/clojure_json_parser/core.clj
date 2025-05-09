@@ -51,12 +51,11 @@
             [(get string-chars-matcher 0) (subs (get string-chars-matcher 1) 1)]))))
 
 (defn parse-array-values [input]
-  (if (not (str/starts-with? (str/triml input) ",")) [[] input]
-      (let [value-matcher (parse-value (subs (str/triml input) 1))]
-        (if (nil? value-matcher) nil
-            (let [parse-array-values-match (parse-array-values (get value-matcher 1))]
-              (if (nil? parse-array-values-match) nil
-                  [(into [(get value-matcher 0)] (get parse-array-values-match 0)) (get parse-array-values-match 1)]))))))
+  (loop [data [] input input]
+    (if (not (str/starts-with? (str/triml input) ",")) [data input]
+        (let [value-matcher (parse-value (subs (str/triml input) 1))]
+          (if (nil? value-matcher) nil
+              (recur (into data [(get value-matcher 0)]) (get value-matcher 1)))))))
 
 (defn parse-array [input]
   (if (not (str/starts-with? input "[")) nil
