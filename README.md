@@ -7,7 +7,7 @@ JSON Parser implementation in Clojure
 - `parse-json` is the primary JSON parser function.
 - `test-json-parser` tests against a set of test cases in `test/clojure_json_parser/cases`.
 
-<!-- ## Usage
+## Usage
 1. Install `Java`
 2. Install `leiningen` (which also installs `Clojure`)
 3. Start repl by running the following command from the project directory
@@ -16,5 +16,5 @@ $ lein repl
 ```
 1. Run the test function inside repl
 ```
-
-``` -->
+(test-json-parser)
+```
