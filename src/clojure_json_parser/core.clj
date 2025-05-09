@@ -2,8 +2,9 @@
   (:require [clojure.string :as str]
             [clojure.java.io :as io]))
 
-(defn parse-null [input]
-  (if (str/starts-with? input "null") [nil (subs input 4)] nil))
+(declare parse-null parse-bool parse-number parse-string parse-array parse-object parse-value)
+
+(defn parse-null [input] (if (str/starts-with? input "null") [nil (subs input 4)] nil))
 
 (defn parse-bool [input]
   (if (str/starts-with? input "true") [true (subs input 4)]
@@ -18,14 +19,12 @@
 (def str-esc-chars {"\"" "\"", "\\" "\\", "/" "/", "b" "\b", "f" "\f", "n" "\n", "r" "\r", "t" "\t"})
 (defn parse-esc-char [input]
   (if (and (> (.length input) 0) (get str-esc-chars (subs input 0 1)))
-    [(get str-esc-chars (subs input 0 1)) (subs input 1)]
-    nil))
+    [(get str-esc-chars (subs input 0 1)) (subs input 1)] nil))
 
 (defn parse-unicode-char [input]
   (let [unicode-char-matcher (re-find #"^u([a-fA-F0-9]{4})" input)]
     (if (nil? unicode-char-matcher) nil
-        [(char (Integer/parseInt (get unicode-char-matcher 1) 16))
-         (subs input 5)])))
+        [(char (Integer/parseInt (get unicode-char-matcher 1) 16)) (subs input 5)])))
 
 (def control-chars #{1 0 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 127})
 (defn parse-string-char [input]
@@ -34,29 +33,22 @@
           [(subs input 0 1) (subs input 1)])))
 
 (defn parse-string-chars [input]
-  (if (= (.length input) 0) nil
-      (if (str/starts-with? input "\"") ["" input]
-          (if (str/starts-with? input "\\")
-            (let [char-matcher (or (parse-unicode-char (subs input 1))
-                                   (parse-esc-char (subs input 1)))]
-              (if (nil? char-matcher) nil
-                  (let [string-matcher (parse-string-chars (get char-matcher 1))]
-                    (if (nil? string-matcher) nil
-                        [(str (get char-matcher 0) (get string-matcher 0))
-                         (get string-matcher 1)]))))
-            (let [string-char-matcher (parse-string-char input)]
-              (if (nil? string-char-matcher) nil
-                  (let [string-matcher (parse-string-chars (get string-char-matcher 1))]
-                    (if (nil? string-matcher) nil
-                        [(str (get string-char-matcher 0) (get string-matcher 0))
-                         (get string-matcher 1)]))))))))
+  (loop [data "" input input]
+    (if (= (.length input) 0) nil
+        (if (str/starts-with? input "\"") [data input]
+            (if (str/starts-with? input "\\")
+              (let [char-matcher (or (parse-unicode-char (subs input 1)) (parse-esc-char (subs input 1)))]
+                (if (nil? char-matcher) nil
+                    (recur (str data (get char-matcher 0)) (get char-matcher 1))))
+              (let [string-char-matcher (parse-string-char input)]
+                (if (nil? string-char-matcher) nil
+                    (recur (str data (get string-char-matcher 0)) (get string-char-matcher 1)))))))))
 
 (defn parse-string [input]
   (if (not (str/starts-with? input "\"")) nil
       (let [string-chars-matcher (parse-string-chars (subs input 1))]
         (if (nil? string-chars-matcher) nil
             [(get string-chars-matcher 0) (subs (get string-chars-matcher 1) 1)]))))
-
 
 (defn parse-array-values [input]
   (if (not (str/starts-with? (str/triml input) ",")) [[] input]
@@ -116,5 +108,8 @@
              (filter #(.isFile %) (file-seq (io/file "./test/clojure_json_parser/cases"))))]
     (map #(list % (not (nil? (parse-json (slurp %)))))
          test-files)))
+
+(parse-json (slurp "./test/clojure_json_parser/cases/pass1.json"))
+(parse-json (slurp "./test/clojure_json_parser/cases/passReddit.json"))
 
 (test-json-parser)

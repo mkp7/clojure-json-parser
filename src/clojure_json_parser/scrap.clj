@@ -50,6 +50,23 @@
 (defn sum-two [a b] (infix (a + b)))
 (sum-two 1 2)
 
+(defmacro if-not-nil [nil-match suc-exp] (if (nil? nil-match) nil suc-exp))
+(if (nil? 1) nil "success exp")
+(if-not-nil 1 "success exp")
+
+;; Loop Recur
+(loop [iteration 0]
+  (println (str "Iteration " iteration))
+  (if (> iteration 3)
+    (println "Goodbye!")
+    (recur (inc iteration))))
+
+(loop [iteration 0 data 10]
+  (println (str "Iteration " iteration))
+  (if (> iteration 3)
+    [iteration data]
+    (recur (inc iteration) (dec data))))
+
 "check falsy or truthy values"
 (boolean nil)
 
