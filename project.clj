@@ -6,4 +6,5 @@
   :dependencies [[org.clojure/clojure "1.11.1"]
                  [org.clojure/data.json "2.5.1"]]
   :repl-options {:init-ns clojure-json-parser.core}
-  :plugins [[cider/cider-nrepl "0.55.7"]])
+  :plugins [[cider/cider-nrepl "0.55.7"]]
+  :cljfmt {:load-config-file? true})
