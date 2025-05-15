@@ -1,0 +1,2 @@
+{:hooks {:macroexpand
+         {clojure-json-parser.core/--> core/-->}}}
